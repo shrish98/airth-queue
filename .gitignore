@@ -1,0 +1,37 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.production.local
+
+# Build outputs
+dist
+build
+.next
+out
+
+# SQLite Database
+*.sqlite
+*.sqlite-journal
+*.db
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE & OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage
+.nyc_output

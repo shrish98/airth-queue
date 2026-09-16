@@ -40,6 +40,15 @@ describe('Jobs Module (E2E) - State Machine & Concurrency Tests', () => {
     createdJobId = res.body.id;
   });
 
+  it('/jobs/counts (GET) - should return job status count breakdown', async () => {
+    const res = await request(app.getHttpServer()).get('/jobs/counts').expect(200);
+
+    expect(res.body).toHaveProperty('pending');
+    expect(res.body).toHaveProperty('running');
+    expect(res.body).toHaveProperty('completed');
+    expect(res.body).toHaveProperty('failed');
+  });
+
   it('/jobs/:id/status (PATCH) - should reject illegal transition pending -> completed', async () => {
     const res = await request(app.getHttpServer())
       .patch(`/jobs/${createdJobId}/status`)
@@ -67,5 +76,12 @@ describe('Jobs Module (E2E) - State Machine & Concurrency Tests', () => {
     // The other request MUST be rejected (409 Conflict or 400 Bad Request)
     expect(statuses).toContain(200);
     expect(statuses[1]).toBeGreaterThanOrEqual(400);
+  });
+
+  it('/jobs/:id (DELETE) - should delete a job by ID', async () => {
+    await request(app.getHttpServer()).delete(`/jobs/${createdJobId}`).expect(200);
+
+    // Verify 404 after deletion
+    await request(app.getHttpServer()).get(`/jobs/${createdJobId}`).expect(404);
   });
 });

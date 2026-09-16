@@ -34,7 +34,7 @@ export class JobsService {
 
     const savedJob = await this.jobRepository.save(job);
     this.logger.log(`Created job: [${savedJob.id}] "${savedJob.title}"`);
-    
+
     // Broadcast real-time WebSocket notification
     this.jobsGateway.notifyJobCreated(savedJob);
     this.broadcastCounts();
@@ -94,7 +94,7 @@ export class JobsService {
   }
 
   /**
-   * Update Job Status with Atomic Concurrency Protection & Strict State Machine Logic
+   * Update Job Status with Atomic Concurrency Protection & Version Increment
    */
   async updateStatus(id: string, newStatus: JobStatus): Promise<Job> {
     // 1. Fetch current state of job
@@ -114,14 +114,15 @@ export class JobsService {
       );
     }
 
-    // 3. Execute ATOMIC SQL UPDATE to handle Race Conditions
-    // We only update IF status is STILL currentStatus at the moment the query hits the DB
+    // 3. Execute ATOMIC SQL UPDATE with explicit Optimistic Version Increment
+    // We update IF AND ONLY IF status is STILL currentStatus at execution time
     const updateResult = await this.jobRepository
       .createQueryBuilder()
       .update(Job)
       .set({
         status: newStatus,
         updatedAt: new Date(),
+        version: () => 'version + 1', // Explicitly increment optimistic locking version column
       })
       .where('id = :id AND status = :expectedStatus', {
         id,
@@ -129,7 +130,7 @@ export class JobsService {
       })
       .execute();
 
-    // If 0 rows were updated, another concurrent request changed the status first!
+    // If 0 rows were updated, a concurrent request modified the record first
     if (updateResult.affected === 0) {
       this.logger.warn(
         `Race condition detected on Job [${id}]! Another request updated status concurrently.`,
@@ -147,7 +148,7 @@ export class JobsService {
     this.jobsGateway.notifyJobUpdated(updatedJob);
     this.broadcastCounts();
 
-    // 5. Bonus Feature: If job moved to RUNNING, simulate background execution
+    // 5. Bonus Feature: If job moved to RUNNING, trigger queue worker simulation
     if (newStatus === JobStatus.RUNNING) {
       this.simulateJobProcessing(id);
     }
@@ -186,20 +187,25 @@ export class JobsService {
    * Automatically transitions a RUNNING job to COMPLETED (or FAILED) after 4 seconds.
    */
   private simulateJobProcessing(jobId: string) {
-    const processingTime = 4000; // 4 seconds delay
-    this.logger.log(`Background worker picked up Job [${jobId}]. Processing for ${processingTime / 1000}s...`);
+    const processingTime = 4000;
+    this.logger.log(
+      `Background worker picked up Job [${jobId}]. Processing for ${processingTime / 1000}s...`,
+    );
 
     setTimeout(async () => {
       try {
         const job = await this.jobRepository.findOne({ where: { id: jobId } });
         if (job && job.status === JobStatus.RUNNING) {
-          // 90% chance of completed, 10% chance of failed
           const targetStatus = Math.random() > 0.1 ? JobStatus.COMPLETED : JobStatus.FAILED;
 
           await this.jobRepository
             .createQueryBuilder()
             .update(Job)
-            .set({ status: targetStatus, updatedAt: new Date() })
+            .set({
+              status: targetStatus,
+              updatedAt: new Date(),
+              version: () => 'version + 1',
+            })
             .where('id = :id AND status = :expectedStatus', {
               id: jobId,
               expectedStatus: JobStatus.RUNNING,
@@ -207,7 +213,9 @@ export class JobsService {
             .execute();
 
           const finalJob = await this.findOne(jobId);
-          this.logger.log(`Background worker finished Job [${jobId}] -> Result: ${targetStatus}`);
+          this.logger.log(
+            `Background worker finished Job [${jobId}] -> Result: ${targetStatus}`,
+          );
 
           this.jobsGateway.notifyJobUpdated(finalJob);
           this.broadcastCounts();

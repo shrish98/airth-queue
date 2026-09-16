@@ -11,14 +11,6 @@ This repository demonstrates best practices in **API Design**, **Finite State Ma
 
 ---
 
-## 🚀 Live Links & Quick Start
-
-* 📡 **Live Backend API**: `https://airth-queue-backend.onrender.com` *(or local: `http://localhost:3001`)*
-* 💻 **Live Frontend Dashboard**: `https://airth-queue-frontend.vercel.app` *(or local: `http://localhost:3000`)*
-* 📄 **Interactive Swagger API Docs**: `http://localhost:3001/api/docs`
-
----
-
 ## 📦 System Architecture & Features
 
 ```
@@ -43,8 +35,10 @@ This repository demonstrates best practices in **API Design**, **Finite State Ma
                                            │
                ┌───────────────────────────▼────────────────────────────┐
                │             SQLite / PostgreSQL Database               │
+               │  - Local: SQLite file persistence (`airth_jobs.sqlite`)│
+               │  - Production: PostgreSQL via `DATABASE_URL`           │
                │  - Atomic `WHERE status = :expectedStatus`             │
-               │  - Optimistic Version Lock (@VersionColumn)            │
+               │  - Optimistic Version Lock (`version: () => version+1`)│
                └────────────────────────────────────────────────────────┘
 ```
 
@@ -83,12 +77,16 @@ $$\text{pending} \longrightarrow \text{running} \longrightarrow \begin{cases} \t
 #### Q3: What happens when two requests arrive at nearly the same time? (Race Condition)
 > **Answer**: Imagine two browser tabs hit `PATCH /jobs/:id/status` to transition a job from `pending` $\rightarrow$ `running` at the exact same millisecond.
 > 
-> To prevent race conditions, we use an **Atomic Conditional SQL Query**:
+> To prevent race conditions, we use an **Atomic Conditional SQL Query** with explicit version incrementing:
 > ```typescript
 > const updateResult = await this.jobRepository
 >   .createQueryBuilder()
 >   .update(Job)
->   .set({ status: newStatus, updatedAt: new Date() })
+>   .set({
+>     status: newStatus,
+>     updatedAt: new Date(),
+>     version: () => 'version + 1', // Increments TypeORM version column atomically
+>   })
 >   .where('id = :id AND status = :expectedStatus', {
 >     id,
 >     expectedStatus: currentStatus, // Must still be 'pending' in DB
@@ -108,16 +106,17 @@ $$\text{pending} \longrightarrow \text{running} \longrightarrow \begin{cases} \t
 #### Q4: How would you prevent an invalid or inconsistent state?
 > **Answer**: 
 > 1. Database-level enum checks and non-null constraints.
-> 2. TypeORM `@VersionColumn()` optimistic locking.
-> 3. Atomic conditional SQL updates ensuring zero phantom state overwrites.
+> 2. Dual-layer concurrency protection: Atomic conditional SQL query combined with TypeORM `@VersionColumn()` optimistic locking.
+> 3. Strict FSM transition validator intercepting all incoming HTTP requests.
 
 ---
 
-## ⭐ Bonus Feature: Production-Ready Enhancements
+## ⭐ Production-Ready Enhancements
 
-1. **Real-Time WebSockets (`Socket.io`)**: Broadcasts job creations, status updates, and metric count changes instantly across all open browser sessions without polling.
-2. **Background Queue Worker Simulation**: When a job enters `running` status, an asynchronous worker simulates processing for 4 seconds before automatically finalizing it as `completed` (or `failed`), demonstrating real job queue lifecycle dynamics.
-3. **Interactive Race Condition Simulator Widget**: Built right into the React dashboard top bar! Evaluators can click **"Test Race Condition"** to intentionally fire 2 parallel HTTP PATCH requests side-by-side and observe live `200 OK` vs `409 Conflict` resolution.
+1. **Dual DB Engine Support**: SQLite for zero-config local development, PostgreSQL for cloud deployments (Render, Neon, Supabase) via `DATABASE_URL` environment variable.
+2. **Real-Time WebSockets (`Socket.io`)**: Broadcasts job creations, status updates, and metric count changes instantly across all open browser sessions without polling.
+3. **Background Queue Worker Simulation**: When a job enters `running` status, an asynchronous background worker process simulates execution for 4 seconds before finalizing it as `completed` (or `failed`), demonstrating real queue worker dynamics.
+4. **Interactive Race Condition Simulator Widget**: Built right into the React dashboard top bar! Evaluators can click **"Test Race Condition"** to intentionally fire 2 parallel HTTP PATCH requests side-by-side and observe live `200 OK` vs `409 Conflict` resolution.
 
 ---
 
@@ -127,26 +126,20 @@ $$\text{pending} \longrightarrow \text{running} \longrightarrow \begin{cases} \t
 * Node.js v18+ 
 * npm v9+
 
-### 1. Backend Setup (NestJS)
+### Quick Start (Single Command)
+Run both NestJS backend and React frontend concurrently:
 ```bash
-cd backend
-npm install
-npm run start:dev
+npm run dev
 ```
-Backend will start at `http://localhost:3001` with Swagger docs at `http://localhost:3001/api/docs`.
+
+* **Frontend Dashboard**: `http://localhost:3000`
+* **Backend API**: `http://localhost:3001`
+* **Interactive Swagger Docs**: `http://localhost:3001/api/docs`
 
 To run automated state machine & concurrency E2E tests:
 ```bash
 npm run test:e2e
 ```
-
-### 2. Frontend Setup (React + Vite)
-```bash
-cd frontend
-npm install
-npm run dev
-```
-Frontend dashboard will be running at `http://localhost:3000`.
 
 ---
 

@@ -8,17 +8,17 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const logger = new Logger('Bootstrap');
 
-  // Enable CORS for React Frontend
+  // Browser-compliant CORS configuration (resolves wildcards with credentials issue)
   app.enableCors({
-    origin: '*',
+    origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
 
-  // Global Exception Filter
+  // Global Exception Filter for standardized API error contracts
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  // Global DTO Validation Pipe
+  // Global DTO Validation Pipe with whitelist protection
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

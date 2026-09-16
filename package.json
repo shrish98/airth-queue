@@ -4,11 +4,11 @@
   "private": true,
   "description": "Mini Job Queue Dashboard root runner for Airth assignment",
   "scripts": {
-    "dev": "concurrently -n \"backend,frontend\" -c \"magenta.bold,cyan.bold\" \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "npm --prefix backend run start:dev",
-    "dev:frontend": "npm --prefix frontend run dev",
-    "build": "npm --prefix backend run build && npm --prefix frontend run build",
-    "test:e2e": "npm --prefix backend run test:e2e"
+    "dev": "concurrently -n \"backend,frontend\" -c \"magenta.bold,cyan.bold\" \"cd backend && npm run start:dev\" \"cd frontend && npm run dev\"",
+    "dev:backend": "cd backend && npm run start:dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "cd backend && npm run build && cd ../frontend && npm run build",
+    "test:e2e": "cd backend && npm run test:e2e"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

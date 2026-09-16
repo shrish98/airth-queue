@@ -34,19 +34,19 @@ const ToastItem: React.FC<{ toast: ToastMessage; onDismiss: (id: string) => void
 
   const config = {
     success: {
-      bg: 'bg-slate-900 border-emerald-500/40 text-emerald-300',
+      bg: 'bg-white border-emerald-200 text-emerald-800 shadow-lg',
       icon: CheckCircle2,
-      iconColor: 'text-emerald-400',
+      iconColor: 'text-emerald-600',
     },
     error: {
-      bg: 'bg-slate-900 border-rose-500/40 text-rose-300',
+      bg: 'bg-white border-rose-200 text-rose-800 shadow-lg',
       icon: AlertCircle,
-      iconColor: 'text-rose-400',
+      iconColor: 'text-rose-600',
     },
     info: {
-      bg: 'bg-slate-900 border-indigo-500/40 text-indigo-300',
+      bg: 'bg-white border-orange-200 text-orange-800 shadow-lg',
       icon: Info,
-      iconColor: 'text-indigo-400',
+      iconColor: 'text-orange-600',
     },
   }[toast.type];
 
@@ -54,16 +54,16 @@ const ToastItem: React.FC<{ toast: ToastMessage; onDismiss: (id: string) => void
 
   return (
     <div
-      className={`pointer-events-auto p-4 rounded-xl border shadow-xl flex items-start gap-3 transition-all animate-bounce-in glass-panel ${config.bg}`}
+      className={`pointer-events-auto p-4 rounded-xl border flex items-start gap-3 transition-all animate-bounce-in ${config.bg}`}
     >
       <Icon className={`w-5 h-5 shrink-0 mt-0.5 ${config.iconColor}`} />
       <div className="flex-1 text-xs">
-        <div className="font-bold text-white text-sm">{toast.title}</div>
-        {toast.message && <div className="text-slate-300 mt-0.5">{toast.message}</div>}
+        <div className="font-bold text-slate-900 text-sm">{toast.title}</div>
+        {toast.message && <div className="text-slate-600 mt-0.5 font-medium">{toast.message}</div>}
       </div>
       <button
         onClick={() => onDismiss(toast.id)}
-        className="text-slate-400 hover:text-white p-0.5"
+        className="text-slate-400 hover:text-slate-700 p-0.5"
       >
         <X className="w-4 h-4" />
       </button>

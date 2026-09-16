@@ -146,7 +146,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-orange-50/40 text-slate-800 flex flex-col font-['Plus_Jakarta_Sans',sans-serif]">
       {/* Navbar */}
       <Navbar
         onOpenCreateModal={() => setIsCreateModalOpen(true)}
@@ -176,7 +176,7 @@ export const App: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-900 py-6 text-center text-xs text-slate-500">
+      <footer className="border-t border-orange-100 bg-white/60 py-6 text-center text-xs text-slate-500 font-medium">
         <p>Airth React + NestJS Intern Assignment • Built with React 18 & NestJS TypeORM</p>
       </footer>
 

@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JobsModule } from './jobs/jobs.module';
 import { Job } from './jobs/entities/job.entity';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -22,11 +23,10 @@ import { Job } from './jobs/entities/job.entity';
             url: dbUrl,
             entities: [Job],
             synchronize: true,
-            ssl: { rejectUnauthorized: false }, // For cloud deployments (Render, Supabase, Neon)
+            ssl: { rejectUnauthorized: false },
           };
         }
 
-        // Fallback to local SQLite file persistence
         return {
           type: 'sqlite',
           database: configService.get<string>('DB_NAME') || 'airth_jobs.sqlite',
@@ -38,5 +38,6 @@ import { Job } from './jobs/entities/job.entity';
     }),
     JobsModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}
